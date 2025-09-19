@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Xadrez teste</title>
+    <title>Xadrez Teste</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -29,6 +29,10 @@
             overflow-x: hidden;
         }
 
+        #game-container {
+            position: relative;
+        }
+
         #chessboard {
             display: grid;
             grid-template-columns: repeat(8, 1fr);
@@ -40,6 +44,7 @@
             border: 8px solid #3a2d24;
             border-radius: 8px;
             box-shadow: 0 0 25px rgba(255, 223, 186, 0.3), 0 0 10px rgba(0,0,0,0.5) inset;
+            position: relative; /* Necessário para a peça flutuante */
         }
 
         .square {
@@ -56,13 +61,22 @@
             width: 85%;
             height: 85%;
             cursor: pointer;
-            transition: transform 0.1s ease-in-out;
+            transition: transform 0.1s ease-in-out, opacity 0.2s;
             filter: drop-shadow(2px 2px 3px rgba(0,0,0,0.6));
             position: relative;
             z-index: 10;
         }
 
         .piece:hover { transform: scale(1.1); }
+
+        .floating-piece {
+            position: absolute;
+            z-index: 1000;
+            pointer-events: none;
+            transition: top 0.4s ease-in-out, left 0.4s ease-in-out;
+            filter: drop-shadow(4px 8px 8px rgba(0,0,0,0.5));
+            transform: scale(1.1); /* Ligeiramente maior ao flutuar */
+        }
 
         .valid-move-indicator {
             position: absolute;
@@ -112,10 +126,31 @@
         
         #game-title { text-shadow: 0 0 10px #ffdfba, 0 0 20px #ffdfba; }
 
-        #status-panel {
+        .panel {
              background: rgba(0, 0, 0, 0.3);
              backdrop-filter: blur(5px);
              border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        #ai-thought-bubble {
+            width: 100%;
+            opacity: 0;
+            visibility: hidden;
+            height: 0;
+            overflow: hidden;
+            padding-top: 0;
+            padding-bottom: 0;
+            margin-bottom: 0;
+            transition: opacity 0.3s, height 0.3s ease-in-out, padding 0.3s ease-in-out, margin 0.3s ease-in-out;
+        }
+
+        #ai-thought-bubble.visible {
+            opacity: 1;
+            visibility: visible;
+            height: 110px;
+            padding-top: 1rem;
+            padding-bottom: 1rem;
+            margin-bottom: 1rem;
         }
 
         .move-feedback-emoji {
@@ -125,8 +160,26 @@
             font-size: 3vmin;
             z-index: 40;
             pointer-events: none;
-            animation: fadeInOut 2s ease-in-out forwards;
+            animation: fadeInOut 3.5s ease-in-out forwards;
             text-shadow: 0 0 5px black, 0 0 10px black;
+        }
+        
+        .captured-piece {
+            width: 28px;
+            height: 28px;
+        }
+
+        .crack-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: url("data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj48cGF0aCBkPSJNIDIwLDE1IEwgNDUsNTAgTCA1MCw1MiBMIDg1LDkwIiBzdHJva2U9InJnYmEoMCwwLDAsMC42KSIgc3Ryb2tlLXdpZHRoPSIzLjUiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgLz48cGF0aCBkPSJNIDQ1LDUwIEwgNjAsMzAiIHN0cm9rZT0icmdiYSgwLDAsMCwwLjUpIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgLz48cGF0aCBkPSJNIDUwLDUyIEwgMzAsNzAiIHN0cm9rZT0icmdiYSgwLDAsMCwwLjUpIiBzdHJva2Utd2lkdGg9IjIiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgLz48cGF0aCBkPSJNIDY1LDc1IEwgNzUsNzAiIHN0cm9rZT0icmdiYSgwLDAsMCwwLjQpIiBzdHJva2Utd2lkdGg9IjEuNSIgZmlsbD0ibm9uZSIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiAvPjxwYXRoIGQ9Ik0gMjUsODAgTCAyOCw4NSIgc3Ryb2tlPSJyZ2JhKDAsMCwwLDAuNCkiIHN0cm9rZS1XDdGg9IjEiIGZpbGw9Im5vbmUiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgLz48L3N2Zz4=");
+            background-size: 90%;
+            background-repeat: no-repeat;
+            background-position: center;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.7;
         }
 
         @keyframes fadeInOut {
@@ -136,6 +189,17 @@
             100% { opacity: 0; transform: scale(0.5) translateY(-10px); }
         }
 
+        .board-shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-1px, 0, 0); }
+            20%, 80% { transform: translate3d(2px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-3px, 0, 0); }
+            40%, 60% { transform: translate3d(3px, 0, 0); }
+        }
+
     </style>
 </head>
 <body class="flex flex-col items-center justify-center min-h-screen p-4">
@@ -143,18 +207,33 @@
     <h1 id="game-title" class="text-4xl md:text-6xl font-bold mb-4 text-center text-yellow-200">Xadrez Teste</h1>
 
     <div id="game-container" class="flex flex-col lg:flex-row items-center gap-6">
-        <div id="chessboard"></div>
+        <div class="relative">
+            <div id="chessboard"></div>
+        </div>
         
         <div class="flex flex-col items-center gap-4 w-full lg:w-64">
-             <div id="status-panel" class="p-4 rounded-lg shadow-lg text-center w-full">
+             <div id="ai-thought-bubble" class="panel rounded-lg shadow-lg">
+                <h3 class="text-center text-lg font-bold mb-2">Teste Pensa...</h3>
+                <p id="ai-thought-text" class="text-sm italic text-yellow-100"></p>
+            </div>
+             <div id="status-panel" class="panel p-4 rounded-lg shadow-lg text-center w-full">
                 <h2 class="text-2xl font-bold mb-2">Status</h2>
                 <p id="status" class="text-xl text-yellow-100">Vez das Brancas</p>
             </div>
-            <div id="evaluation-panel" class="w-full p-4 rounded-lg shadow-lg" style="background: rgba(0, 0, 0, 0.3); backdrop-filter: blur(5px); border: 1px solid rgba(255, 255, 255, 0.1);">
+            <div id="evaluation-panel" class="panel w-full p-4 rounded-lg shadow-lg">
                 <div class="text-center mb-2 text-lg font-bold">Avaliação</div>
                 <div class="w-full bg-stone-900 rounded-full h-5 overflow-hidden border-2 border-stone-500 flex">
                     <div id="evaluation-bar-white" class="bg-gray-200 transition-all duration-500" style="width: 50%;"></div>
                     <div id="evaluation-bar-black" class="bg-gray-800 transition-all duration-500" style="width: 50%;"></div>
+                </div>
+            </div>
+            <div id="captured-pieces-panel" class="panel w-full p-4 rounded-lg shadow-lg">
+                <h3 class="text-center text-lg font-bold mb-2">Peças Capturadas</h3>
+                <div id="white-captured-container" class="min-h-[36px] flex flex-wrap items-center justify-start gap-1 p-1 bg-black/20 rounded">
+                    <!-- Peças pretas capturadas pelas brancas -->
+                </div>
+                <div id="black-captured-container" class="min-h-[36px] mt-2 flex flex-wrap items-center justify-start gap-1 p-1 bg-black/20 rounded">
+                    <!-- Peças brancas capturadas pelas pretas -->
                 </div>
             </div>
             <button id="reset-button" class="bg-yellow-700 hover:bg-yellow-600 text-white font-bold py-3 px-6 rounded-lg shadow-md transition-all duration-300 w-full">
@@ -170,6 +249,10 @@
         const resetButton = document.getElementById('reset-button');
         const evalBarWhite = document.getElementById('evaluation-bar-white');
         const evalBarBlack = document.getElementById('evaluation-bar-black');
+        const whiteCapturedContainer = document.getElementById('white-captured-container');
+        const blackCapturedContainer = document.getElementById('black-captured-container');
+        const aiThoughtBubble = document.getElementById('ai-thought-bubble');
+        const aiThoughtText = document.getElementById('ai-thought-text');
         
         // --- URLs DAS IMAGENS ---
         const pieceImages = {
@@ -191,6 +274,11 @@
         let isGameOver = false;
         let kingInCheck = null;
         let isAIThinking = false;
+        let isAnimating = false;
+        let moveHistory = [];
+        let whiteCapturedPieces = [];
+        let blackCapturedPieces = [];
+        let crackedSquares = [];
 
         // --- INICIALIZAÇÃO ---
         function initializeBoard() {
@@ -202,18 +290,29 @@
             ];
             turn = 'w';
             selectedPiece = null; validMoves = [];
-            isGameOver = false; isAIThinking = false;
+            isGameOver = false; isAIThinking = false; isAnimating = false;
+            moveHistory = []; whiteCapturedPieces = []; blackCapturedPieces = []; crackedSquares = [];
+            hideAIThought();
             updateGameStatus();
         }
         
         // --- RENDERIZAÇÃO E UI ---
-        function renderBoard(feedback = null) {
+        function renderBoard() {
             boardElement.innerHTML = '';
             const kingPos = kingInCheck ? findKing(kingInCheck, boardState) : null;
             for (let r = 0; r < 8; r++) { for (let c = 0; c < 8; c++) {
                 const square = document.createElement('div');
                 square.classList.add('square', (r + c) % 2 === 0 ? 'light' : 'dark');
                 square.dataset.row = r; square.dataset.col = c;
+
+                const crackData = crackedSquares.find(data => data.pos[0] === r && data.pos[1] === c);
+                if (crackData) {
+                    const crack = document.createElement('div');
+                    crack.classList.add('crack-effect');
+                    crack.style.transform = `rotate(${crackData.rot}deg)`;
+                    square.appendChild(crack);
+                }
+
                 if (kingPos && kingPos[0] === r && kingPos[1] === c) {
                     square.classList.add('in-check');
                     const checkIndicator = document.createElement('div');
@@ -232,9 +331,6 @@
                 boardElement.appendChild(square);
             }}
             highlightSelectedAndValidMoves();
-            if (feedback && feedback.emoji) {
-                showMoveFeedback(feedback.emoji, feedback.row, feedback.col);
-            }
         }
 
         function highlightSelectedAndValidMoves() {
@@ -257,13 +353,50 @@
             });
         }
         
+        function renderCapturedPieces() {
+            whiteCapturedContainer.innerHTML = '';
+            blackCapturedContainer.innerHTML = '';
+            
+            whiteCapturedPieces.forEach(pieceCode => {
+                const img = document.createElement('img');
+                img.src = pieceImages[pieceCode];
+                img.classList.add('captured-piece');
+                whiteCapturedContainer.appendChild(img);
+            });
+            
+            blackCapturedPieces.forEach(pieceCode => {
+                const img = document.createElement('img');
+                img.src = pieceImages[pieceCode];
+                img.classList.add('captured-piece');
+                blackCapturedContainer.appendChild(img);
+            });
+        }
+
         function updateEvaluationBar() {
-            const score = evaluateBoard(boardState);
+            const score = evaluateBoard(boardState) / 10;
             const advantage = Math.max(-10, Math.min(10, score));
             const whitePercentage = 50 + advantage * 5;
             const blackPercentage = 100 - whitePercentage;
             evalBarWhite.style.width = `${whitePercentage}%`;
             evalBarBlack.style.width = `${blackPercentage}%`;
+        }
+        
+        function displayAIThought(reason) {
+            aiThoughtText.textContent = '';
+            aiThoughtBubble.classList.add('visible');
+            let i = 0;
+            function typeWriter() {
+                if (i < reason.length) {
+                    aiThoughtText.textContent += reason.charAt(i);
+                    i++;
+                    setTimeout(typeWriter, 30);
+                }
+            }
+            typeWriter();
+        }
+
+        function hideAIThought() {
+            aiThoughtBubble.classList.remove('visible');
         }
 
         function showMoveFeedback(emoji, row, col) {
@@ -273,66 +406,140 @@
             feedbackElement.classList.add('move-feedback-emoji');
             feedbackElement.textContent = emoji;
             targetSquare.appendChild(feedbackElement);
-            setTimeout(() => { feedbackElement.remove(); }, 2000);
+            setTimeout(() => { feedbackElement.remove(); }, 3500);
         }
 
         // --- CONTROLE DE JOGO ---
         function handleSquareClick(event) {
-            if (isGameOver || turn === 'b' || isAIThinking) return;
-            const square = event.target.closest('.square'); if (!square) return;
-            const row = parseInt(square.dataset.row); const col = parseInt(square.dataset.col);
+            if (isGameOver || turn === 'b' || isAIThinking || isAnimating) return;
+            const square = event.target.closest('.square');
+            if (!square) return;
+
+            const row = parseInt(square.dataset.row);
+            const col = parseInt(square.dataset.col);
             const pieceCode = boardState[row][col];
+
+            if (selectedPiece && validMoves.some(move => move[0] === row && move[1] === col)) {
+                movePiece(selectedPiece.row, selectedPiece.col, row, col);
+                return;
+            }
+
+            if (pieceCode && pieceCode.startsWith(turn)) {
+                selectPiece(pieceCode, row, col);
+                return;
+            }
+
             if (selectedPiece) {
-                if (validMoves.some(move => move[0] === row && move[1] === col)) {
-                    movePiece(selectedPiece.row, selectedPiece.col, row, col);
-                } else if (pieceCode && pieceCode.startsWith(turn)) selectPiece(pieceCode, row, col);
-                else { selectedPiece = null; validMoves = []; }
-            } else if (pieceCode && pieceCode.startsWith(turn)) selectPiece(pieceCode, row, col);
-            renderBoard();
+                selectedPiece = null;
+                validMoves = [];
+                renderBoard();
+            }
         }
 
         function selectPiece(piece, row, col) {
             selectedPiece = { piece, row, col };
             validMoves = getValidMoves(piece, row, col, boardState);
+            renderBoard();
         }
         
-        function movePiece(fromRow, fromCol, toRow, toCol) {
-            const scoreBefore = evaluateBoard(boardState);
-            const movingPieceColor = boardState[fromRow][fromCol][0];
-            let feedback = null;
+        async function movePiece(fromRow, fromCol, toRow, toCol) {
+            if (isAnimating) return;
+            isAnimating = true;
 
+            const capturedPieceCode = boardState[toRow][toCol];
+
+            const fromSquare = document.querySelector(`.square[data-row='${fromRow}'][data-col='${fromCol}']`);
+            const toSquare = document.querySelector(`.square[data-row='${toRow}'][data-col='${toCol}']`);
+            const pieceToMove = fromSquare.querySelector('.piece');
+            if (!pieceToMove) { isAnimating = false; return; }
+
+            const boardRect = boardElement.getBoundingClientRect();
+            const fromRect = fromSquare.getBoundingClientRect();
+            const toRect = toSquare.getBoundingClientRect();
+
+            const floatingPiece = document.createElement('img');
+            floatingPiece.src = pieceToMove.src;
+            floatingPiece.classList.add('floating-piece');
+            floatingPiece.style.width = `${fromRect.width * 0.85}px`;
+            floatingPiece.style.height = `${fromRect.height * 0.85}px`;
+            floatingPiece.style.left = `${fromRect.left - boardRect.left + (fromRect.width * 0.075)}px`;
+            floatingPiece.style.top = `${fromRect.top - boardRect.top + (fromRect.height * 0.075)}px`;
+            
+            boardElement.appendChild(floatingPiece);
+            pieceToMove.style.opacity = '0';
+            const capturedPieceEl = toSquare.querySelector('.piece');
+            if (capturedPieceEl) { capturedPieceEl.style.opacity = '0'; }
+
+            await new Promise(resolve => setTimeout(resolve, 10));
+
+            floatingPiece.style.left = `${toRect.left - boardRect.left + (toRect.width * 0.075)}px`;
+            floatingPiece.style.top = `${toRect.top - boardRect.top + (toRect.height * 0.075)}px`;
+            
+            await new Promise(resolve => {
+                const animationTimeout = setTimeout(() => resolve(), 500); // Fallback de segurança
+                floatingPiece.addEventListener('transitionend', () => {
+                    clearTimeout(animationTimeout);
+                    resolve();
+                }, { once: true });
+            });
+            
+            if (capturedPieceCode) {
+                boardElement.classList.add('board-shake');
+                setTimeout(() => boardElement.classList.remove('board-shake'), 500);
+                crackedSquares.push({ pos: [toRow, toCol], rot: Math.floor(Math.random() * 360) });
+                if (capturedPieceCode.startsWith('w')) blackCapturedPieces.push(capturedPieceCode);
+                else whiteCapturedPieces.push(capturedPieceCode);
+            }
+            if (turn === 'b') hideAIThought();
+
+            const boardStateBeforeMove = boardState.map(r => [...r]);
+            const movingPieceColor = boardState[fromRow][fromCol][0];
+            const moveString = moveToString(fromRow, fromCol, toRow, toCol);
+            
             boardState[toRow][toCol] = boardState[fromRow][fromCol];
             boardState[fromRow][fromCol] = null;
-            
-            if (movingPieceColor === 'w') { // Apenas para o jogador
-                const scoreAfter = evaluateBoard(boardState);
-                const delta = scoreAfter - scoreBefore;
-                let emoji = null;
-                if (delta < -20) { emoji = '⁉️'; } // Blunder
-                else if (delta > 15) { emoji = '✨'; } // Boa jogada
-                if (emoji) { 
-                    feedback = { emoji, row: toRow, col: toCol };
-                }
-            }
-            
+            moveHistory.push(moveString);
             turn = turn === 'w' ? 'b' : 'w';
             selectedPiece = null; validMoves = [];
-            updateGameStatus(feedback);
-            if (!isGameOver && turn === 'b') {
-                isAIThinking = true;
-                statusElement.textContent = 'Decorus está pensando...';
-                setTimeout(makeAIMove, 250);
-            }
+            floatingPiece.remove();
+            isAnimating = false;
+            updateGameStatus();
+
+            setTimeout(() => {
+                if (movingPieceColor === 'w') {
+                    let emoji = null;
+                    if (isBookMove(moveHistory)) { emoji = '📖'; } 
+                    else {
+                        const bestMoveForWhite = findBestMove(boardStateBeforeMove, 'w');
+                        const bestMoveString = bestMoveForWhite.move ? moveToString(bestMoveForWhite.move.from[0], bestMoveForWhite.move.from[1], bestMoveForWhite.move.to[0], bestMoveForWhite.move.to[1]) : null;
+                        const scoreAfter = evaluateBoard(boardState);
+                        const delta = scoreAfter - evaluateBoard(boardStateBeforeMove);
+                        if (moveString === bestMoveString) { emoji = '✨'; } 
+                        else if (delta > -150) { emoji = '😐'; } 
+                        else { emoji = '⁉️'; }
+                    }
+                    if (emoji) showMoveFeedback(emoji, toRow, toCol);
+
+                    const critique = generatePlayerMoveCritique(emoji);
+                    displayAIThought(critique);
+                }
+
+                if (!isGameOver && turn === 'b') {
+                    isAIThinking = true;
+                    statusElement.textContent = 'Teste está a pensar...';
+                    setTimeout(makeAIMove, 2000); // Atraso para ler a crítica
+                }
+            }, 50);
         }
         
         function updateStatus(message = null) {
             if (message) { statusElement.textContent = message; return; }
-            if (isAIThinking) return;
+            if (isAIThinking || isAnimating) return;
             statusElement.textContent = `Vez das ${turn === 'w' ? 'Brancas' : 'Pretas'}`;
             if (kingInCheck) statusElement.textContent += ` (XEQUE!)`;
         }
 
-        function updateGameStatus(feedback = null) {
+        function updateGameStatus() {
             kingInCheck = isKingInCheck(turn, boardState) ? turn : null;
             const allLegalMoves = getAllLegalMovesForColor(turn, boardState);
             if (allLegalMoves.length === 0) {
@@ -347,10 +554,11 @@
                 } else updateStatus('EMPATE por afogamento!');
             } else updateStatus();
             updateEvaluationBar();
-            renderBoard(feedback);
+            renderCapturedPieces();
+            renderBoard();
         }
 
-        // --- LÓGICA DE MOVIMENTOS (EXISTENTE) ---
+        // --- LÓGICA DE MOVIMENTOS ---
         function findKing(kingColor, board) {
             for (let r = 0; r < 8; r++) for (let c = 0; c < 8; c++) if (board[r][c] === kingColor + 'K') return [r, c];
             return null;
@@ -372,7 +580,7 @@
                 const piece = board[r][c];
                 if (piece && piece.startsWith(color)) {
                     const moves = getValidMoves(piece, r, c, board);
-                    moves.forEach(move => allMoves.push({ from: [r, c], to: move }));
+                    moves.forEach(move => allMoves.push({ from: [r, c], to: move, piece: piece[1] }));
                 }
             }
             return allMoves;
@@ -449,45 +657,189 @@
         }
         function isValid(r, c) { return r >= 0 && r < 8 && c >= 0 && c < 8; }
 
-        // --- INTELIGÊNCIA ARTIFICIAL (IA) ---
-        const pieceValues = { 'P': 10, 'N': 30, 'B': 30, 'R': 50, 'Q': 90, 'K': 900 };
+        // --- INTELIGÊNCIA ARTIFICIAL E AVALIAÇÃO ---
+        const pieceValues = { 'P': 100, 'N': 320, 'B': 330, 'R': 500, 'Q': 900, 'K': 20000 };
+        const pieceNames = { 'P': 'Peão', 'N': 'Cavalo', 'B': 'Bispo', 'R': 'Torre', 'Q': 'Rainha', 'K': 'Rei' };
         const AI_DEPTH = 3;
+        const pawnPST = [
+             0,  0,  0,  0,  0,  0,  0,  0, 50, 50, 50, 50, 50, 50, 50, 50, 10, 10, 20, 30, 30, 20, 10, 10,
+             5,  5, 10, 25, 25, 10,  5,  5,  0,  0,  0, 20, 20,  0,  0,  0,  5, -5,-10,  0,  0,-10, -5,  5,
+             5, 10, 10,-20,-20, 10, 10,  5,  0,  0,  0,  0,  0,  0,  0,  0
+        ];
+        const knightPST = [
+            -50,-40,-30,-30,-30,-30,-40,-50,-40,-20,  0,  0,  0,  0,-20,-40,-30,  0, 10, 15, 15, 10,  0,-30,
+            -30,  5, 15, 20, 20, 15,  5,-30,-30,  0, 15, 20, 20, 15,  0,-30,-30,  5, 10, 15, 15, 10,  5,-30,
+            -40,-20,  0,  5,  5,  0,-20,-40,-50,-40,-30,-30,-30,-30,-40,-50
+        ];
+        const bishopPST = [
+            -20,-10,-10,-10,-10,-10,-10,-20,-10,  0,  0,  0,  0,  0,  0,-10,-10,  0,  5, 10, 10,  5,  0,-10,
+            -10,  5,  5, 10, 10,  5,  5,-10,-10,  0, 10, 10, 10, 10,  0,-10,-10, 10, 10, 10, 10, 10, 10,-10,
+            -10,  5,  0,  0,  0,  0,  5,-10,-20,-10,-10,-10,-10,-10,-10,-20
+        ];
+        const rookPST = [
+             0,  0,  0,  0,  0,  0,  0,  0,  5, 10, 10, 10, 10, 10, 10,  5,-5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5,-5,  0,  0,  0,  0,  0,  0, -5,-5,  0,  0,  0,  0,  0,  0, -5,
+            -5,  0,  0,  0,  0,  0,  0, -5, 0,  0,  0,  5,  5,  0,  0,  0
+        ];
+        const queenPST = [
+            -20,-10,-10, -5, -5,-10,-10,-20,-10,  0,  0,  0,  0,  0,  0,-10,-10,  0,  5,  5,  5,  5,  0,-10,
+             -5,  0,  5,  5,  5,  5,  0, -5,  0,  0,  5,  5,  5,  5,  0, -5,-10,  5,  5,  5,  5,  5,  0,-10,
+            -10,  0,  5,  0,  0,  0,  0,-10,-20,-10,-10, -5, -5,-10,-10,-20
+        ];
+        const kingPST = [
+            -30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,-30,-40,-40,-50,-50,-40,-40,-30,
+            -30,-40,-40,-50,-50,-40,-40,-30,-20,-30,-30,-40,-40,-30,-30,-20,-10,-20,-20,-20,-20,-20,-20,-10,
+             20, 20,  0,  0,  0,  0, 20, 20, 20, 30, 10,  0,  0, 10, 30, 20
+        ];
+        const piecePST = { 'P': pawnPST, 'N': knightPST, 'B': bishopPST, 'R': rookPST, 'Q': queenPST, 'K': kingPST };
+        const openingBook = [
+            ['e2e4', 'e7e5', 'g1f3', 'b8c6'], ['d2d4', 'd7d5', 'c2c4', 'e7e6'], ['e2e4', 'c7c5', 'g1f3', 'd7d6'],
+            ['e2e4', 'c7c6', 'd2d4', 'd7d5'], ['e2e4', 'e7e5', 'f1c4', 'g8f6']
+        ];
 
-        function makeAIMove() {
-            const bestMove = findBestMove(boardState);
-            if (bestMove) {
-                movePiece(bestMove.from[0], bestMove.from[1], bestMove.to[0], bestMove.to[1]);
-            }
-            isAIThinking = false;
-            updateStatus();
+        function generatePlayerMoveCritique(emoji) {
+            const critiques = {
+                '📖': [ "Ah, um lance de livro. Pelo menos você estudou o básico.", "Seguindo os passos dos mestres? Não vai te salvar de mim.", "Previsível. Saiu direto da primeira página do manual." ],
+                '✨': [ "Opa! Essa eu não esperava. Interessante...", "Hmm... admito, essa foi boa. Mas um pingo de sorte não ganha a guerra.", "Finalmente um desafio! Achei que você ia me entediar até o fim.", "Não foi uma jogada terrível. Estou surpresa." ],
+                '😐': [ "Sério? Só isso? Que decepção.", "Um movimento tão... medíocre. Típico.", "Isso não me afeta em nada. Continue tentando.", "Enquanto você faz isso, eu já planejei seu fim." ],
+                '⁉️': [ "Hahaha! Que erro grosseiro. Obrigado pelo presente.", "Você acabou de me entregar o jogo com essa jogada. Tolo.", "Eu quase sinto pena da sua falta de visão. Quase.", "Patético. Você nem percebeu o que acabou de fazer, não é?" ]
+            };
+            const possibleCritiques = critiques[emoji] || critiques['😐'];
+            return possibleCritiques[Math.floor(Math.random() * possibleCritiques.length)];
         }
-
-        function findBestMove(board) {
-            let bestScore = Infinity;
+        function moveToString(fromR, fromC, toR, toC) {
+            const cols = 'abcdefgh'; const rows = '87654321';
+            return `${cols[fromC]}${rows[fromR]}${cols[toC]}${rows[toR]}`;
+        }
+        function isBookMove(history) {
+            return openingBook.some(line => {
+                if (history.length > line.length) return false;
+                for (let i = 0; i < history.length; i++) { if (history[i] !== line[i]) return false; }
+                return true;
+            });
+        }
+        function makeAIMove() {
+            const aiResult = findBestMove(boardState, 'b'); // "Thinking" happens here
+            
+            if (aiResult && aiResult.move) {
+                displayAIThought(aiResult.reason);
+                setTimeout(() => {
+                    movePiece(aiResult.move.from[0], aiResult.move.from[1], aiResult.move.to[0], aiResult.move.to[1]);
+                    isAIThinking = false; // "Thinking" is done after the move is initiated
+                }, 1800);
+            } else {
+                 isAIThinking = false;
+            }
+        }
+        function orderMoves(moves, board) {
+            return moves.sort((a, b) => {
+                const pieceA = board[a.from[0]][a.from[1]]; const pieceB = board[b.from[0]][b.from[1]];
+                const captureA = board[a.to[0]][a.to[1]]; const captureB = board[b.to[0]][b.to[1]];
+                let scoreA = 0, scoreB = 0;
+                if (captureA) scoreA = 10 * pieceValues[captureA[1]] - pieceValues[pieceA[1]];
+                if (captureB) scoreB = 10 * pieceValues[captureB[1]] - pieceValues[pieceB[1]];
+                return scoreB - scoreA;
+            });
+        }
+        function findBestMove(board, color) {
+            const isMaximizing = color === 'w'; let bestScore = isMaximizing ? -Infinity : Infinity;
             let bestMove = null;
-            const moves = getAllLegalMovesForColor('b', board);
-            moves.sort(() => Math.random() - 0.5); 
+            let moves = getAllLegalMovesForColor(color, board);
+            if(moves.length === 0) return {move: null, reason: ""};
+
+            moves = orderMoves(moves, board);
             for (const move of moves) {
                 const tempBoard = board.map(r => [...r]);
                 tempBoard[move.to[0]][move.to[1]] = tempBoard[move.from[0]][move.from[1]];
                 tempBoard[move.from[0]][move.from[1]] = null;
-                const score = minimax(tempBoard, AI_DEPTH - 1, -Infinity, Infinity, true);
-                if (score < bestScore) {
-                    bestScore = score;
-                    bestMove = move;
+                const score = minimax(tempBoard, AI_DEPTH - 1, -Infinity, Infinity, !isMaximizing);
+                if (isMaximizing) { if (score > bestScore) { bestScore = score; bestMove = move; } } 
+                else { if (score < bestScore) { bestScore = score; bestMove = move; } }
+            }
+            
+            let reason = "";
+            if (bestMove) {
+                const taunts = {
+                    checkmate: [ "É o fim. Previsível, mas bem jogado... por mim, claro.", "Xeque-mate. Acabou a brincadeira. Foi fácil demais.", "E... fim de jogo. Honestamente? Esperava mais." ],
+                    check: [ "Xeque. Está sentindo a pressão? Porque eu não sinto nada.", "Seu rei parece um pouco... exposto. Cuidado.", "Acha que consegue escapar desta? Que fofo.", "Opa, cuidado aí. Seu rei está na minha mira." ],
+                    capture: [ "Sua peça? Minha peça agora. Obrigado pelo presente.", "Uma peça a menos para você se preocupar. De nada.", "Estava usando esta peça? Que pena.", "Adeus, peça inútil. Abriu espaço para o meu ataque.", "*Ploc*. O som da sua estratégia desmoronando." ],
+                    goodMove: [ "Viu o que eu fiz? É assim que se joga.", "Cada peça no seu lugar. Um plano perfeito se desenrolando.", "Estou construindo uma fortaleza. E você? O que está fazendo?", "Sutil, mas devastador. Você nem vai ver de onde veio o golpe." ],
+                    general: [ "Sério que essa foi sua jogada? Interessante...", "Estou calculando 1.378.954 futuros. Em todos eles, eu venço.", "Não se preocupe, vou jogar devagar para você acompanhar.", "Que silêncio... é você tentando entender o que aconteceu?", "Isso foi... uma jogada? Anotado." ]
+                };
+
+                const from_r = bestMove.from[0], from_c = bestMove.from[1];
+                const to_r = bestMove.to[0], to_c = bestMove.to[1];
+                const movingPiece = board[from_r][from_c], capturedPiece = board[to_r][to_c];
+                
+                const tempBoard = board.map(r => [...r]);
+                tempBoard[to_r][to_c] = tempBoard[from_r][from_c]; tempBoard[from_r][from_c] = null;
+
+                if (isKingInCheck('w', tempBoard)) {
+                    if (getAllLegalMovesForColor('w', tempBoard).length === 0) {
+                        reason = taunts.checkmate[Math.floor(Math.random() * taunts.checkmate.length)];
+                    } else {
+                        reason = taunts.check[Math.floor(Math.random() * taunts.check.length)];
+                    }
+                } else if (capturedPiece) {
+                    reason = taunts.capture[Math.floor(Math.random() * taunts.capture.length)];
+                } else {
+                    const pstIndexOld = (color === 'w' ? (from_r * 8 + from_c) : ((7 - from_r) * 8 + from_c));
+                    const pstIndexNew = (color === 'w' ? (to_r * 8 + to_c) : ((7 - to_r) * 8 + to_c));
+                    const oldPST = piecePST[movingPiece[1]][pstIndexOld] || 0;
+                    const newPST = piecePST[movingPiece[1]][pstIndexNew] || 0;
+                    if (newPST > oldPST + 10) {
+                        reason = taunts.goodMove[Math.floor(Math.random() * taunts.goodMove.length)];
+                    } else {
+                        reason = taunts.general[Math.floor(Math.random() * taunts.general.length)];
+                    }
+                }
+            } else {
+                reason = "Acho que não tenho mais o que fazer...";
+            }
+            return { move: bestMove, reason: reason };
+        }
+        
+        function quiesce(board, alpha, beta, isMaximizingPlayer) {
+            const stand_pat = evaluateBoard(board);
+            if (isMaximizingPlayer) {
+                if (stand_pat >= beta) return beta;
+                if (stand_pat > alpha) alpha = stand_pat;
+            } else {
+                if (stand_pat <= alpha) return alpha;
+                if (stand_pat < beta) beta = stand_pat;
+            }
+
+            const color = isMaximizingPlayer ? 'w' : 'b';
+            const moves = getAllLegalMovesForColor(color, board).filter(m => board[m.to[0]][m.to[1]] !== null); // Apenas capturas
+            
+            for (const move of moves) {
+                const tempBoard = board.map(r => [...r]);
+                tempBoard[move.to[0]][move.to[1]] = tempBoard[move.from[0]][move.from[1]];
+                tempBoard[move.from[0]][move.from[1]] = null;
+                const score = quiesce(tempBoard, alpha, beta, !isMaximizingPlayer);
+
+                if (isMaximizingPlayer) {
+                    if (score >= beta) return beta;
+                    if (score > alpha) alpha = score;
+                } else {
+                    if (score <= alpha) return alpha;
+                    if (score < beta) beta = score;
                 }
             }
-            return bestMove;
+            return isMaximizingPlayer ? alpha : beta;
         }
 
         function minimax(board, depth, alpha, beta, isMaximizingPlayer) {
-            if (depth === 0) return evaluateBoard(board);
+            if (depth === 0) {
+                 return quiesce(board, alpha, beta, isMaximizingPlayer);
+            }
             const color = isMaximizingPlayer ? 'w' : 'b';
-            const moves = getAllLegalMovesForColor(color, board);
+            let moves = getAllLegalMovesForColor(color, board);
             if (moves.length === 0) {
-                 if (isKingInCheck(color, board)) return isMaximizingPlayer ? -10000 : 10000;
+                 if (isKingInCheck(color, board)) return isMaximizingPlayer ? -10000 - depth : 10000 + depth;
                  return 0;
             }
+            moves = orderMoves(moves, board);
             if (isMaximizingPlayer) {
                 let maxEval = -Infinity;
                 for (const move of moves) {
@@ -514,16 +866,25 @@
                 return minEval;
             }
         }
-
         function evaluateBoard(board) {
             let total = 0;
+            let whiteBishops = 0, blackBishops = 0;
             for (let r = 0; r < 8; r++) { for (let c = 0; c < 8; c++) {
                 const piece = board[r][c];
                 if (piece) {
-                    const value = pieceValues[piece[1]] || 0;
-                    total += (piece[0] === 'w' ? value : -value);
+                    const color = piece[0]; const type = piece[1];
+                    if(type === 'B') {
+                        if(color === 'w') whiteBishops++; else blackBishops++;
+                    }
+                    const materialValue = pieceValues[type] || 0;
+                    const pstIndex = color === 'w' ? (r * 8 + c) : ((7 - r) * 8 + c);
+                    const positionalValue = piecePST[type][pstIndex] || 0;
+                    const totalValue = materialValue + positionalValue;
+                    total += (color === 'w' ? totalValue : -totalValue);
                 }
             }}
+            if (whiteBishops >= 2) total += 50; // Bónus para o par de bispos
+            if (blackBishops >= 2) total -= 50;
             return total;
         }
         
